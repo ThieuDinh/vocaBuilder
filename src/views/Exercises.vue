@@ -274,16 +274,10 @@ const stopLobbyMusic = () => {
 }
 
 const playFeedbackSound = (correct) => {
-  // Disabled per user request
-  /*
-  const url = correct 
-    ? 'https://raw.githubusercontent.com/GansAndRoses/KahootPlayer/master/public/audio/kahoot-correct.mp3'
-    : 'https://raw.githubusercontent.com/GansAndRoses/KahootPlayer/master/public/audio/kahoot-wrong.mp3'
+  const url = correct ? '/correct.mp3' : '/wrong.mp3'
   const audio = new Audio(url)
   audio.volume = 0.5
-  audio.crossOrigin = "anonymous"
   audio.play().catch(e => console.warn("Sound play failed", e))
-  */
 }
 
 const fetchLessons = async () => {
@@ -365,7 +359,7 @@ const checkAnswer = (opt, answer) => {
   selected.value = opt
   isCorrect.value = (opt === answer)
   
-  if (selectedType.value === 'kahoot') {
+  if (selectedType.value === 'kahoot' || selectedType.value === 'word_typing') {
     playFeedbackSound(isCorrect.value)
   }
 
