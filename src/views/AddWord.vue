@@ -91,7 +91,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import axios from 'axios'
+import api from '../services/api'
 
 const lessons = ref([])
 const lessonId = ref('')
@@ -109,7 +109,7 @@ const selectedIndex = ref(null)
 
 const fetchLessons = async () => {
   try {
-    const res = await axios.get('http://localhost:3000/api/lessons')
+    const res = await api.get('/lessons')
     lessons.value = res.data
     if(res.data.length > 0) lessonId.value = res.data[0].id
   } catch (err) {
@@ -126,7 +126,7 @@ const checkWord = async () => {
   successMsg.value = ''
 
   try {
-    const res = await axios.post('http://localhost:3000/api/words/check', { english: word.value })
+    const res = await api.post('/words/check', { english: word.value })
     checkedData.value = res.data
     vietnamese.value = res.data.vietnamese
   } catch (err) {
@@ -161,7 +161,7 @@ const saveWord = async () => {
   errorMsg.value = ''
   
   try {
-    const res = await axios.post('http://localhost:3000/api/words', {
+    const res = await api.post('/words', {
       english: word.value,
       vietnamese: vietnamese.value,
       partOfSpeech: partOfSpeech.value,

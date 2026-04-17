@@ -135,7 +135,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import axios from 'axios'
+import api from '../services/api'
 import { useRoute } from 'vue-router'
 
 const route = useRoute()
@@ -163,7 +163,7 @@ const matched = ref([])
 
 const fetchLessons = async () => {
   try {
-    const res = await axios.get('http://localhost:3000/api/lessons')
+    const res = await api.get('/lessons')
     lessons.value = res.data
     if (route.query.lessonId) {
       selectedLessonId.value = route.query.lessonId
@@ -187,12 +187,12 @@ const fetchExercises = async () => {
   resetState()
   
   try {
-    let url = `http://localhost:3000/api/exercises?type=${selectedType.value}`
+    let url = `/exercises?type=${selectedType.value}`
     if (selectedLessonId.value) {
       url += `&lessonId=${selectedLessonId.value}`
     }
 
-    const res = await axios.get(url)
+    const res = await api.get(url)
     exercises.value = res.data
   } catch (err) {
     if (err.response && err.response.data && err.response.data.error) {

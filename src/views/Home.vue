@@ -33,7 +33,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import axios from 'axios'
+import api from '../services/api'
 
 const lessons = ref([])
 const loading = ref(true)
@@ -43,7 +43,7 @@ const newLessonName = ref('')
 const fetchLessons = async () => {
   try {
     loading.value = true;
-    const res = await axios.get('http://localhost:3000/api/lessons')
+    const res = await api.get('/lessons')
     lessons.value = res.data
   } catch (error) {
     console.error("Error fetching lessons:", error)
@@ -56,7 +56,7 @@ const createLesson = async () => {
   if (!newLessonName.value.trim()) return;
   lessonLoading.value = true;
   try {
-    await axios.post('http://localhost:3000/api/lessons', { name: newLessonName.value });
+    await api.post('/lessons', { name: newLessonName.value });
     newLessonName.value = '';
     await fetchLessons();
   } catch(e) {

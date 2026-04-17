@@ -35,7 +35,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import axios from 'axios'
+import api from '../services/api'
 import { useRoute } from 'vue-router'
 
 const route = useRoute()
@@ -45,10 +45,10 @@ const loading = ref(true)
 
 const fetchWordAndLesson = async () => {
   try {
-    const lessonRes = await axios.get(`http://localhost:3000/api/lessons/${route.params.id}`)
+    const lessonRes = await api.get(`/lessons/${route.params.id}`)
     lessonName.value = lessonRes.data.name
     
-    const wordsRes = await axios.get(`http://localhost:3000/api/words?lessonId=${route.params.id}`)
+    const wordsRes = await api.get(`/words?lessonId=${route.params.id}`)
     words.value = wordsRes.data
   } catch (error) {
     console.error(error)
