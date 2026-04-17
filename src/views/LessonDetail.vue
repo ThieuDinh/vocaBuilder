@@ -21,9 +21,12 @@
     <div v-else class="words-grid">
       <div v-for="word in words" :key="word.id" class="word-card glass">
         <div class="word-content">
-          <h3 class="english">
-            {{ word.english }}
-            <span class="pos-badge-sm" v-if="word.partOfSpeech">{{ word.partOfSpeech }}</span>
+          <h3 class="english flex-between" style="align-items: flex-start;">
+            <span>
+              {{ word.english }}
+              <span class="pos-badge-sm" v-if="word.partOfSpeech">{{ word.partOfSpeech }}</span>
+            </span>
+            <button class="delete-word-btn" @click="confirmDeleteWord(word)" title="Xóa từ vựng">✕</button>
           </h3>
           <p class="vietnamese">{{ word.vietnamese }}</p>
           <div class="description" v-if="word.description">{{ word.description }}</div>
@@ -55,6 +58,18 @@ const fetchWordAndLesson = async () => {
     lessonName.value = 'Lỗi lấy dữ liệu'
   } finally {
     loading.value = false
+  }
+}
+
+const confirmDeleteWord = async (word) => {
+  if (window.confirm(`Bạn có chắc chắn muốn xóa từ "${word.english}"?`)) {
+    try {
+      await api.delete(`/words/${word.id}`);
+      await fetchWordAndLesson();
+    } catch (error) {
+      alert("Lỗi khi xóa từ");
+      console.error(error);
+    }
   }
 }
 
@@ -128,6 +143,21 @@ onMounted(() => {
   font-weight: 700;
   vertical-align: middle;
   margin-left: 0.5rem;
+}
+
+.delete-word-btn {
+  background: transparent;
+  border: none;
+  color: #d1d5db;
+  font-size: 1.25rem;
+  cursor: pointer;
+  transition: color 0.2s;
+  padding: 0;
+  line-height: 1;
+}
+
+.delete-word-btn:hover {
+  color: var(--danger);
 }
 .state-panel {
   text-align: center;

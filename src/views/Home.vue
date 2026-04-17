@@ -26,6 +26,7 @@
           <h2>{{ lesson.name }}</h2>
           <p>{{ lesson._count.words }} từ vựng</p>
         </div>
+        <button class="delete-btn-mini" @click.stop="confirmDeleteLesson(lesson)" title="Xóa buổi học">🗑️</button>
       </div>
     </div>
   </div>
@@ -63,6 +64,24 @@ const createLesson = async () => {
     console.error(e)
   } finally {
     lessonLoading.value = false;
+  }
+}
+
+const confirmDeleteLesson = async (lesson) => {
+  const wordCount = lesson._count.words;
+  let message = `Bạn có chắc chắn muốn xóa buổi học "${lesson.name}"?`;
+  if (wordCount > 0) {
+    message = `Buổi học "${lesson.name}" đang có ${wordCount} từ vựng. Xóa buổi học sẽ xóa TẤT CẢ các từ này. Bạn có chắc chắn không?`;
+  }
+  
+  if (window.confirm(message)) {
+    try {
+      await api.delete(`/lessons/${lesson.id}`);
+      await fetchLessons();
+    } catch (error) {
+      alert("Lỗi khi xóa buổi học");
+      console.error(error);
+    }
   }
 }
 
@@ -141,5 +160,39 @@ onMounted(() => {
   .lessons-grid {
     grid-template-columns: 1fr;
   }
+}
+
+.lesson-card {
+  position: relative;
+}
+
+.delete-btn-mini {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: white;
+  border: 1px solid #fee2e2;
+  color: #ef4444;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  cursor: pointer;
+  opacity: 0;
+  transition: all 0.2s;
+  font-size: 0.9rem;
+}
+
+.lesson-card:hover .delete-btn-mini {
+  opacity: 1;
+}
+
+.delete-btn-mini:hover {
+  background: #ef4444;
+  color: white;
+  border-color: #ef4444;
+  transform: scale(1.1);
 }
 </style>

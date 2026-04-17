@@ -26,6 +26,7 @@
             <option value="vietnamese_to_word">Đoán từ qua nghĩa Tiếng Việt</option>
             <option value="description_to_word">Đoán từ qua mô tả</option>
             <option value="matching">Nối từ Tiếng Anh - Tiếng Việt</option>
+            <option value="word_typing">Nhập từ đúng (Tiếng Anh)</option>
           </select>
         </div>
 
@@ -68,6 +69,29 @@
                   {{ opt }}
                 </button>
               </div>
+            </div>
+            
+            <!-- Type: Word Typing -->
+            <div v-if="currentEx.type === 'word_typing'" class="typing-type">
+              <div class="input-group">
+                <input 
+                  type="text" 
+                  v-model="typedAnswer" 
+                  class="input-control typing-input" 
+                  placeholder="Gõ từ tiếng Anh tại đây..."
+                  @keyup.enter="checkTypedAnswer"
+                  :disabled="selected !== null"
+                  ref="typingInput"
+                >
+              </div>
+              <button 
+                class="btn btn-primary mt-2" 
+                style="width: 100%" 
+                @click="checkTypedAnswer"
+                :disabled="selected !== null || !typedAnswer.trim()"
+              >
+                Kiểm tra
+              </button>
             </div>
 
             <!-- Type: Matching -->
@@ -208,6 +232,8 @@ const isCorrect = ref(false)
 const selectedLeft = ref(null)
 const selectedRight = ref(null)
 const matched = ref([])
+const typedAnswer = ref('')
+const typingInput = ref(null)
 
 // Music & Sound Effects
 const lobbyMusic = ref(null)
@@ -320,6 +346,19 @@ const resetState = () => {
   selectedLeft.value = null
   selectedRight.value = null
   matched.value = []
+  typedAnswer.value = ''
+  
+  // Focus input if typing mode
+  if (selectedType.value === 'word_typing') {
+    setTimeout(() => {
+      if (typingInput.value) typingInput.value.focus()
+    }, 100)
+  }
+}
+
+const checkTypedAnswer = () => {
+  if (!typedAnswer.value.trim() || selected.value !== null) return
+  checkAnswer(typedAnswer.value.trim().toLowerCase(), currentEx.value.answer.toLowerCase())
 }
 
 const checkAnswer = (opt, answer) => {
@@ -612,6 +651,29 @@ onMounted(() => {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1rem;
+}
+.typing-type {
+  max-width: 500px;
+  margin: 0 auto;
+  text-align: center;
+}
+.typing-input {
+  text-align: center;
+  font-size: 1.5rem;
+  font-weight: 700;
+  padding: 1.25rem !important;
+  color: var(--primary);
+  border: 2px solid var(--glass-border);
+  background: white;
+}
+.typing-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 20px rgba(79, 70, 229, 0.15);
+}
+.typing-input::placeholder {
+  font-size: 1rem;
+  font-weight: 400;
+  color: var(--text-muted);
 }
 .opt-btn {
   padding: 1.25rem;
