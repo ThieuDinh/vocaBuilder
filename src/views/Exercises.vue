@@ -1,5 +1,5 @@
 <template>
-  <div class="exercises-page animate-fade-in" :class="{ 'kahoot-theme': selectedType === 'kahoot' && hasStarted }">
+  <div class="exercises-page animate-fade-in" :class="{ 'kahoot-theme': selectedType === 'kahoot' && hasStarted, 'fullscreen': hasStarted }">
     <h1 class="title-main" v-if="!hasStarted || selectedType !== 'kahoot'">Phòng Ôn Tập</h1>
 
     <!-- Phase 1: Setup -->
@@ -206,7 +206,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch, onUnmounted } from 'vue'
 import api from '../services/api'
 import { useRoute } from 'vue-router'
 
@@ -418,6 +418,18 @@ const stopAndExit = () => {
 onMounted(() => {
   fetchLessons()
 })
+
+watch(hasStarted, (val) => {
+  if (val) {
+    document.body.classList.add('no-scroll')
+  } else {
+    document.body.classList.remove('no-scroll')
+  }
+}, { immediate: true })
+
+onUnmounted(() => {
+  document.body.classList.remove('no-scroll')
+})
 </script>
 
 <style scoped>
@@ -469,33 +481,45 @@ onMounted(() => {
 
 .kahoot-container {
   max-width: 1000px;
+  height: 100%;
+}
+
+.exercises-page.fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: #f3f4f6;
+  padding: 1rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Kahoot Specific Theme */
-.kahoot-theme {
+.kahoot-theme.fullscreen {
   background: #46178f !important;
-  min-height: 100vh;
-  margin: -2rem; /* bleed into App layout */
-  padding: 2rem;
+  padding: 1rem;
+  overflow: hidden;
 }
 
 .kahoot-card {
   display: flex;
   flex-direction: column;
-  height: 80vh;
-  gap: 1.5rem;
+  height: 100%;
+  gap: 1rem;
 }
 
 .kahoot-header {
   text-align: center;
   color: white;
+  flex-shrink: 0;
 }
 
 .kahoot-nav {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
 }
 
 .kahoot-exit {
@@ -516,9 +540,9 @@ onMounted(() => {
 }
 
 .kahoot-question {
-  font-size: 2.5rem;
+  font-size: 2rem;
   text-shadow: 0 2px 4px rgba(0,0,0,0.2);
-  margin-top: 1rem;
+  margin-top: 0.5rem;
   color: white;
 }
 
@@ -531,10 +555,17 @@ onMounted(() => {
   justify-content: center;
   position: relative;
   overflow: hidden;
+  margin: 0.5rem 0;
+  min-height: 200px;
+}
+
+.kahoot-answer-status {
+  width: 100%;
+  height: 100%;
 }
 
 .kahoot-placeholder {
-  font-size: 6rem;
+  font-size: 5rem;
 }
 
 .status-overlay {
@@ -550,34 +581,45 @@ onMounted(() => {
   color: white;
   z-index: 10;
   animation: slideInDown 0.4s;
+  padding: 1rem;
+  text-align: center;
 }
 
 .status-overlay.correct { background: #66bf39; }
 .status-overlay.wrong { background: #eb102f; }
 
+.status-overlay h2 {
+  font-size: 2.2rem;
+  margin: 0.25rem 0;
+  font-weight: 900;
+}
+
 .status-icon {
-  font-size: 5rem;
-  margin-bottom: 1rem;
+  font-size: 4rem;
+  margin-bottom: 0.25rem;
 }
 
 .btn-kahoot-next {
-  margin-top: 1.5rem;
+  margin-top: 1rem;
   background: white;
   color: black;
-  padding: 1rem 3rem;
+  padding: 0.8rem 2.5rem;
   font-weight: 800;
-  border-radius: 0.5rem;
+  font-size: 1.15rem;
+  border-radius: 0.8rem;
   border: none;
   cursor: pointer;
-  box-shadow: 0 4px 0 rgba(0,0,0,0.2);
+  box-shadow: 0 4px 0 rgba(0,0,0,0.15);
+  min-width: 180px;
 }
 
 .kahoot-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   grid-template-rows: 1fr 1fr;
-  gap: 1rem;
+  gap: 0.75rem;
   height: 35vh;
+  flex-shrink: 0;
 }
 
 .kahoot-btn {
@@ -585,9 +627,9 @@ onMounted(() => {
   border-radius: 0.5rem;
   display: flex;
   align-items: center;
-  padding: 0 2rem;
+  padding: 0 1rem;
   color: white;
-  font-size: 1.75rem;
+  font-size: 1.25rem;
   font-weight: 700;
   cursor: pointer;
   transition: transform 0.1s;
@@ -603,8 +645,8 @@ onMounted(() => {
 .kahoot-btn.green { background: #26890c; }
 
 .kahoot-shape {
-  font-size: 2.5rem;
-  margin-right: 1.5rem;
+  font-size: 1.5rem;
+  margin-right: 0.75rem;
   filter: drop-shadow(0 2px 2px rgba(0,0,0,0.3));
 }
 
@@ -614,8 +656,9 @@ onMounted(() => {
   position: relative;
   overflow: hidden;
   background: rgba(255, 255, 255, 0.95);
+  border-radius: var(--radius-xl);
 }
-.finish-card { text-align: center; }
+.finish-card { text-align: center; flex: 1; display: flex; flex-direction: column; justify-content: center; }
 .progress-bar {
   position: absolute;
   top: 0;
@@ -678,44 +721,6 @@ onMounted(() => {
   text-align: center;
   animation: fadeIn 0.3s ease-out;
 }
-.pronunciation-box {
-  margin: 1.5rem auto;
-  padding: 1rem 2rem;
-  width: fit-content;
-  gap: 1rem;
-  background: white;
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--glass-border);
-}
-.pronunciation-box.mini {
-  background: rgba(255,255,255,0.2);
-  color: white;
-  border-color: rgba(255,255,255,0.3);
-}
-.word-english {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: var(--primary);
-  text-transform: capitalize;
-}
-.kahoot-theme .word-english { color: white; }
-
-.phonetic {
-  font-family: 'Inter', sans-serif;
-  color: var(--text-muted);
-  font-style: italic;
-}
-.audio-btn {
-  background: var(--bg-color);
-  border: none;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
 
 @keyframes slideInDown {
   from { transform: translateY(-100%); opacity: 0; }
@@ -726,16 +731,16 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.25rem;
 }
 
 .kahoot-music-toggle {
   background: rgba(255, 255, 255, 0.15);
   border: 1px solid rgba(255, 255, 255, 0.3);
   color: white;
-  padding: 0.4rem 1rem;
+  padding: 0.25rem 0.75rem;
   border-radius: 2rem;
-  font-size: 0.8rem;
+  font-size: 0.7rem;
   cursor: pointer;
   transition: background 0.2s;
 }
@@ -745,9 +750,33 @@ onMounted(() => {
 }
 
 @media (max-width: 640px) {
-  .kahoot-grid { grid-template-columns: 1fr; height: auto; padding-bottom: 2rem; }
+  .kahoot-media { min-height: 220px; }
+  .status-overlay h2 { font-size: 1.8rem; }
+  .status-icon { font-size: 3rem; }
+  .btn-kahoot-next { padding: 0.6rem 2rem; min-width: 160px; font-size: 1.1rem; margin-top: 0.75rem; }
+  .kahoot-grid { 
+    grid-template-columns: 1fr 1fr;
+    height: 30vh; 
+    gap: 0.5rem;
+  }
+  .kahoot-btn { font-size: 1.1rem; padding: 0 0.75rem; }
+  .kahoot-shape { font-size: 1.3rem; margin-right: 0.5rem; }
   .kahoot-question { font-size: 1.5rem; }
-  .kahoot-theme { margin: -1rem; padding: 1rem; }
+  .exercises-page.fullscreen { padding: 0.75rem; }
+  .exercise-card { padding: 1.5rem; }
+  .options-grid { grid-template-columns: 1fr; }
   .setup-panel { padding: 1.5rem; }
+}
+
+/* Ensure 100dvh support */
+@supports (height: 100dvh) {
+  .exercises-page.fullscreen {
+    height: 100dvh;
+  }
+}
+@supports not (height: 100dvh) {
+  .exercises-page.fullscreen {
+    height: 100vh;
+  }
 }
 </style>

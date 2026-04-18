@@ -41,9 +41,9 @@
 }
 
 .logo a {
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Be Vietnam Pro', sans-serif;
   font-size: 1.5rem;
-  font-weight: 800;
+  font-weight: 900;
   text-decoration: none;
   background: -webkit-linear-gradient(45deg, var(--primary), var(--secondary));
   -webkit-background-clip: text;
