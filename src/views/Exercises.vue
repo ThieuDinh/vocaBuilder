@@ -23,6 +23,7 @@
           <label class="input-label">Loại bài tập</label>
           <select v-model="selectedType" class="input-control">
             <option value="kahoot">Chế độ Kahoot (Game 4 nút)</option>
+            <option value="flashcard">Thẻ nhớ (Flashcards)</option>
             <option value="vietnamese_to_word">Đoán từ qua nghĩa Tiếng Việt</option>
             <option value="description_to_word">Đoán từ qua mô tả</option>
             <option value="matching">Nối từ Tiếng Anh - Tiếng Việt</option>
@@ -127,17 +128,59 @@
             </div>
           </div>
 
-          <!-- Answer Feedback -->
-          <div class="feedback" v-if="selected !== null && currentEx.type !== 'matching'">
+          <!-- Answer Feedback for standard modes -->
+          <div class="feedback" v-if="selected !== null && !['matching', 'flashcard'].includes(selectedType)">
             <div class="result-header">
               <h3 :class="isCorrect ? 'text-green' : 'text-red'">
                 {{ isCorrect ? 'Chính xác! 🎉' : `Sai rồi! Đáp án là: ${currentEx.answer}` }}
               </h3>
             </div>
             
-            <!-- Pronunciation box removed per user request -->
-
             <button class="btn btn-primary mt-4" @click="nextExercise">Câu tiếp theo</button>
+          </div>
+
+          <!-- Flashcard Mode UI -->
+          <div v-if="selectedType === 'flashcard'" class="flashcard-container">
+            <Transition :name="transitionName" mode="out-in">
+              <div 
+                :key="currentIndex"
+                class="flashcard-scene" 
+                @click="isFlipped = !isFlipped"
+                @touchstart="handleTouchStart"
+                @touchend="handleTouchEnd"
+              >
+                <div class="flashcard-obj" :class="{ 'is-flipped': isFlipped }">
+                  <div class="flashcard-face flashcard-front">
+                    <div class="card-content">
+                      <span class="pos-badge" v-if="currentEx.partOfSpeech">{{ currentEx.partOfSpeech }}</span>
+                      <h1 class="english-word">{{ currentEx.english }}</h1>
+                      <p class="phonetic-text">{{ currentEx.phonetic }}</p>
+                      <div class="audio-trigger" @click.stop="playAudio(currentEx.audioUrl)" v-if="currentEx.audioUrl">
+                        🔊
+                      </div>
+                    </div>
+                    <div class="card-hint">Nhấn để lật thẻ</div>
+                  </div>
+                  <div class="flashcard-face flashcard-back">
+                    <div class="card-content">
+                      <h2 class="vietnamese-meaning">{{ currentEx.vietnamese }}</h2>
+                      <p class="description-text" v-if="currentEx.description">{{ currentEx.description }}</p>
+                    </div>
+                    <div class="card-hint">Nhấn để lật lại</div>
+                  </div>
+                </div>
+              </div>
+            </Transition>
+
+            <div class="flashcard-nav">
+              <button class="nav-btn prev" @click="prevFlashcard" :disabled="currentIndex === 0">
+                <span>← Trở lại</span>
+              </button>
+              <div class="card-counter">{{ currentIndex + 1 }} / {{ exercises.length }}</div>
+              <button class="nav-btn next" @click="nextFlashcard">
+                <span>{{ currentIndex === exercises.length - 1 ? 'Hoàn thành' : 'Tiếp theo →' }}</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -234,6 +277,11 @@ const selectedRight = ref(null)
 const matched = ref([])
 const typedAnswer = ref('')
 const typingInput = ref(null)
+
+const isFlipped = ref(false)
+const transitionName = ref('slide-left')
+const touchStartX = ref(0)
+const touchEndX = ref(0)
 
 // Music & Sound Effects
 const lobbyMusic = ref(null)
@@ -401,6 +449,50 @@ const nextExercise = () => {
   currentIndex.value++
   if (currentIndex.value >= exercises.value.length) {
     stopLobbyMusic()
+  }
+}
+
+const nextFlashcard = () => {
+  if (currentIndex.value === exercises.value.length - 1) {
+    currentIndex.value++
+    return
+  }
+  transitionName.value = 'slide-next'
+  isFlipped.value = false
+  setTimeout(() => {
+    currentIndex.value++
+  }, 50)
+}
+
+const prevFlashcard = () => {
+  if (currentIndex.value > 0) {
+    transitionName.value = 'slide-prev'
+    isFlipped.value = false
+    setTimeout(() => {
+      currentIndex.value--
+    }, 50)
+  }
+}
+
+const handleTouchStart = (e) => {
+  touchStartX.value = e.changedTouches[0].screenX
+}
+
+const handleTouchEnd = (e) => {
+  touchEndX.value = e.changedTouches[0].screenX
+  handleSwipe()
+}
+
+const handleSwipe = () => {
+  const swipeDistance = touchEndX.value - touchStartX.value
+  const threshold = 50
+  
+  if (swipeDistance < -threshold) {
+    // Swipe Left -> Next
+    nextFlashcard()
+  } else if (swipeDistance > threshold) {
+    // Swipe Right -> Prev
+    prevFlashcard()
   }
 }
 
@@ -766,6 +858,204 @@ onUnmounted(() => {
   .exercise-card { padding: 1.5rem; }
   .options-grid { grid-template-columns: 1fr; }
   .setup-panel { padding: 1.5rem; }
+}
+
+/* Flashcard Styles */
+.flashcard-container {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  align-items: center;
+  padding: 1rem 0;
+}
+
+.flashcard-scene {
+  width: 100%;
+  max-width: 400px;
+  height: 280px;
+  perspective: 1000px;
+  cursor: pointer;
+}
+
+.flashcard-obj {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-style: preserve-3d;
+}
+
+.flashcard-obj.is-flipped {
+  transform: rotateY(180deg);
+}
+
+.flashcard-face {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1.5rem;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.12), 0 5px 15px rgba(0,0,0,0.06);
+  background: white;
+  border: 2px solid white;
+  padding: 2rem;
+  text-align: center;
+  transition: box-shadow 0.3s ease;
+}
+
+.flashcard-face:hover {
+  box-shadow: 0 30px 60px rgba(0,0,0,0.15), 0 10px 20px rgba(0,0,0,0.08);
+}
+
+.flashcard-front {
+  background: white;
+  border: 1px solid rgba(79, 70, 229, 0.1);
+}
+
+.flashcard-back {
+  background: linear-gradient(135deg, var(--primary) 0%, #4338ca 100%);
+  color: white;
+  transform: rotateY(180deg);
+}
+
+.pos-badge {
+  background: rgba(79, 70, 229, 0.1);
+  color: var(--primary);
+  padding: 0.25rem 0.75rem;
+  border-radius: 2rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  margin-bottom: 1rem;
+}
+
+.english-word {
+  font-size: 3rem;
+  margin: 0;
+  font-weight: 800;
+  color: #1f2937;
+}
+
+.flashcard-back .vietnamese-meaning {
+  font-size: 2.5rem;
+  margin: 0;
+  font-weight: 800;
+  color: white;
+}
+
+.phonetic-text {
+  font-family: 'Be Vietnam Pro', sans-serif;
+  color: var(--text-muted);
+  font-size: 1.2rem;
+  margin-top: 0.5rem;
+}
+
+.audio-trigger {
+  margin-top: 1.5rem;
+  width: 50px;
+  height: 50px;
+  background: #f3f4f6;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  transition: all 0.2s;
+  font-family: 'Be Vietnam Pro', sans-serif;
+}
+
+.audio-trigger:hover {
+  background: #e5e7eb;
+  transform: scale(1.1);
+}
+
+.card-hint {
+  position: absolute;
+  bottom: 1.5rem;
+  font-size: 0.75rem;
+  opacity: 0.6;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-family: 'Be Vietnam Pro', sans-serif;
+}
+
+.flashcard-nav {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  width: 100%;
+  max-width: 400px;
+  font-family: 'Be Vietnam Pro', sans-serif;
+}
+
+.nav-btn {
+  flex: 1;
+  padding: 1rem;
+  border-radius: 1rem;
+  border: none;
+  background: white;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: #374151;
+}
+
+.nav-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0,0,0,0.1);
+}
+
+.nav-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.nav-btn.next {
+  background: var(--primary);
+  color: white;
+}
+
+.card-counter {
+  font-weight: 700;
+  color: var(--text-muted);
+  min-width: 60px;
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .flashcard-scene { height: 320px; }
+  .english-word { font-size: 2.5rem; }
+}
+
+/* Transition Animations */
+.slide-next-enter-active,
+.slide-next-leave-active,
+.slide-prev-enter-active,
+.slide-prev-leave-active {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.slide-next-enter-from {
+  opacity: 0;
+  transform: translateX(50px);
+}
+.slide-next-leave-to {
+  opacity: 0;
+  transform: translateX(-50px);
+}
+
+.slide-prev-enter-from {
+  opacity: 0;
+  transform: translateX(-50px);
+}
+.slide-prev-leave-to {
+  opacity: 0;
+  transform: translateX(50px);
 }
 
 /* Ensure 100dvh support */
